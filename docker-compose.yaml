@@ -19,48 +19,17 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data/
+      - ./init-scripts:/docker-entrypoint-initdb.d # Монтируем папку с SQL-скриптами
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+        - "${POSTGRES_PORT:-5432}:5432"
     healthcheck:
-      test: [ "CMD-SHELL", "sh -c 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}'" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+        test: [ "CMD-SHELL", "sh -c 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}'" ]
+        interval: 10s
+        timeout: 5s
+        retries: 5
     restart: on-failure
     networks:
-      - project-network
-
-
-  # СУБД Redis (кэширование и брокер сообщений для Celery)
-  redis:
-    image: redis:7-alpine
-    container_name: ${REDIS_CONTAINER_NAME}
-    environment:
-      - REDIS_CONFIG=vm-overcommit-memory yes
-      - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}
-      - ALLOW_EMPTY_PASSWORD=yes
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
-    restart: on-failure
-    networks:
-      - project-network
-
-
-  # мониторинг периодических задач Flower
-  flower:
-    image: mher/flower:0.9.7
-    container_name: ${FLOWER_CONTAINER_NAME}
-    command: [ "flower", "--broker=redis://redis:6379", "--port=5555" ]
-    ports:
-      - "${FLOWER_PORT:-5555}:5555"
-    depends_on:
-      redis:
-        condition: service_started
-    restart: on-failure
-    networks:
-      - project-network
-
+        - project-network
 
   pgadmin:
     image: dpage/pgadmin4
@@ -75,5 +44,3 @@ services:
       - pgadmin-data:/var/lib/pgadmin
     networks:
       - project-network
-
-
